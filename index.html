@@ -9,10 +9,11 @@
   <script>
     async function redirectToParty() {
       const status = document.getElementById('status');
-      const pathParts = window.location.pathname.split('/');
-      const username = pathParts[pathParts.length - 1] || '';
+      // Get username from query parameter ?user=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const username = urlParams.get('user');
       if (!username) {
-        status.textContent = 'No username provided in URL path.';
+        status.textContent = 'No username provided in URL parameter. Please use ?user=USERNAME';
         return;
       }
 
