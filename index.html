@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Redirecting to PokéHeroes Party Click</title>
+</head>
+<body>
+  <p id="status">Loading…</p>
+  <script>
+    async function redirectToParty() {
+      const status = document.getElementById('status');
+      const pathParts = window.location.pathname.split('/');
+      const username = pathParts[pathParts.length - 1] || '';
+      if (!username) {
+        status.textContent = 'No username provided in URL path.';
+        return;
+      }
+
+      status.textContent = `Fetching party for ${username}…`;
+
+      try {
+        const encodedUrl = encodeURIComponent(`https://pokeheroes.com/userprofile?name=${username}`);
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodedUrl}`);
+        const data = await res.json();
+        const html = data.contents;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const partyAnchors = [...doc.querySelectorAll('.userp_box h2')]
+          .filter(h => h.textContent.trim() === 'Party')
+          .flatMap(h => {
+            const table = h.closest('.userp_box').querySelector('table');
+            return table ? [...table.querySelectorAll('a[href*="pokemon.php?id="]')] : [];
+          });
+
+        const ids = partyAnchors.map(a => {
+          const match = a.href.match(/id=(\d+)/);
+          return match ? match[1] : null;
+        }).filter(Boolean);
+
+        const uniqueIds = [...new Set(ids)];
+        if (uniqueIds.length === 0) {
+          status.textContent = `No Pokémon found in ${username}'s party.`;
+          return;
+        }
+
+        const query = uniqueIds.map(id => `id[]=${id}`).join('&');
+        const redirectUrl = `https://pokeheroes.com/pokemon_lite?cl_type=custom&ret=userprofile%3Fname%3D${username}&${query}`;
+
+        status.textContent = `Redirecting to party click link…`;
+        window.location.href = redirectUrl;
+      } catch (error) {
+        status.textContent = 'Error fetching party. Try again later.';
+        console.error(error);
+      }
+    }
+
+    redirectToParty();
+  </script>
+</body>
+</html>
